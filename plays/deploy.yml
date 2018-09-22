@@ -1,0 +1,7 @@
+---
+- name: configure monitoring
+  strategy: debug
+  hosts:
+    - unconfigured
+  roles:
+    - first-boot
