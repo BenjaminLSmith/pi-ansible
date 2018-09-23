@@ -1,0 +1,6 @@
+---
+- name: reset wifi interface
+  shell: ip addr flush dev wlan0; systemctl restart dhcpcd
+  when: not skip_restart|default(false)|bool
+  async: 10
+  poll: 0

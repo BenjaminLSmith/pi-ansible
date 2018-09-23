@@ -1,0 +1,13 @@
+---
+- name: setup hostname
+  hostname:
+    name: "{{ hostname }}"
+  tags:
+    - hostname
+    - deployment
+
+- name: configure wifi IP address
+  template:
+    src: dhcpcd.conf.j2
+    dest: "/etc/dhcpcd.conf"
+  notify: reset wifi interface
