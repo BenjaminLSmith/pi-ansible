@@ -17,7 +17,7 @@
   omit_hostname = false
 
 [[outputs.influxdb]]
-  urls = ["http://192.168.1.23:8086"] # required
+  urls = ["http://{{ influxdb_ip }}:8086"] # required
   database = "telegraf" # required
   retention_policy = ""
   write_consistency = "any"
@@ -41,11 +41,13 @@
 [[inputs.swap]]
 [[inputs.system]]
 
-# # Read metrics from one or more commands that can output to stdou
+# # Read metrics from one or more commands that can output to stdout
 [[inputs.exec]]
   commands = [
-    "sudo /etc/telegraf/pi_temp.sh",
-    "python /etc/telegraf/boinc_stat.py"
+  {% if boinc_enabled is defined and boinc_enabled|bool == true %}
+    "python /etc/telegraf/boinc_stat.py",
+  {% endif %}
+    "sudo /etc/telegraf/pi_temp.sh"
   ]
   interval = "1m"
   timeout = "5s"
