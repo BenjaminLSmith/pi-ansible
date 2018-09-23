@@ -71,7 +71,7 @@
 - name: Configure Temperature monitoring script
   template:
     src: pi_temp.sh.j2
-    dest: /etc/telegraf/pi_temp
+    dest: /etc/telegraf/pi_temp.sh
     owner: root
     group: root
     mode: 0755
