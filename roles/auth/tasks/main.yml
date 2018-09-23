@@ -1,0 +1,68 @@
+---
+
+- name: set root password
+  user:
+    name: root
+    password: "{{ root_password }}"
+
+- name: lock down ssh
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regex }}"
+    line: "{{ item.line }}"
+  with_items: "{{ tgt_ssh_config|default([]) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: restart sshd
+
+- name: setup boinc admin group
+  group: name={{ boinc_admin_group }} state=present
+
+- name: install sudoers template
+  template:
+    src: sudoers.j2
+    dest: /etc/sudoers.d/92-boinc-admins
+    owner: root
+    mode: 0440
+  vars:
+    group_name: "{{ boinc_admin_group }}"
+
+- name: create research users
+  user:
+    name: "{{ item.key }}"
+    state: "{{ item.value.state }}"
+    comment: "{{ item.value.name }}"
+    group: users
+    groups: "{{ item.value.groups }}"
+    remove: "{{ (item.value.state == 'absent') | ternary('yes', 'no') }}"
+  loop_control:
+    label: "{{ item.value.name }} - {{ item.key }}"
+  with_dict: "{{ boinc_users }}"
+
+- name: setup ssh authorized keys
+  authorized_key:
+    user: "{{ item.key }}"
+    state: present
+    exclusive: yes
+    key: "{{ item.value.key }}"
+  when: item.value.state == "present"
+  loop_control:
+    label: "{{ item.value.name }} - {{ item.key }}"
+  with_dict: "{{ boinc_users }}"
+
+- name: deploy user config
+  block:
+    - name: test for deploy user
+      getent: database=passwd key={{ deploy_user }}
+      failed_when: false
+      register: d_user
+    - name: disable deploy user password
+      user: name="{{ deploy_user }}" password='!!'
+      when: '"ansible_facts" in d_user.keys()'
+    - name: enforce deploy user ssh keys
+      authorized_key:
+        user: "{{ deploy_user }}"
+        state: present
+        key: "{{ deploy_keys }}"
+        exclusive: yes
+      when: '"ansible_facts" in d_user.keys()'

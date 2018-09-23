@@ -1,0 +1,25 @@
+---
+tgt_ssh_config:
+  - name: disable agent forwarding
+    regex: '^AllowAgentForwarding'
+    line: AllowAgentForwarding no
+  #
+  - name: disable password auth
+    regex: '^PasswordAuthentication'
+    line: PasswordAuthentication yes
+  #
+  - name: disable root login
+    regex: '^PermitRootLogin'
+    line: PermitRootLogin no
+  #
+  - name: disable tcp forwarding
+    regex: '^AllowTcpForwarding'
+    line: AllowTcpForwarding no
+  #
+  - name: disable x forwarding
+    regex: '^X11Forwarding'
+    line: X11Forwarding no
+  #
+  - name: enforce authorized keys file
+    regex: '^AuthorizedKeysFile'
+    line: AuthorizedKeysFile .ssh/authorized_keys
