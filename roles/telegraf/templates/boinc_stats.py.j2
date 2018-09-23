@@ -1,0 +1,46 @@
+from datetime import datetime
+import re
+import subprocess
+
+# 60 minute deadline before we abort slow tasks
+deadlineThreshold = 60*60
+
+regex = r"\d\)\W-----------\W+name:\W([0-9a-zA-Z\+\.\_\-]+)\W+WU\Wname:\W[0-9a-zA-Z\+\.\_\-]+\W+project\WURL:\W([:a-z0-9\/\.]+)\W+report\Wdeadline:\W([A-Za-z\ 0-9\:]+)\W+ready\Wto\Wreport:\W([a-z]+)\W+got\Wserver\Wack:\W([a-z]+)\W+final\WCPU\Wtime:\W[0-9\.]+\W+state:\W(\w+)\W+scheduler\Wstate:\W(\w+)\W+exit_status:\W\d\W+signal:\W\d+\W+suspended\Wvia\WGUI:\W[a-z]+\W+active_task_state:\W([A-Z]+)\W+app\Wversion\Wnum:\W\d+\W+checkpoint\WCPU\Wtime:\W[0-9\.]+\W+current\WCPU\Wtime:\W([0-9\.]+)\W+fraction done: ([0-9\.]+)\W+swap size:\W\d+\W\w+\W+working\Wset\Wsize:\W\d+\W\w+\W+estimated\WCPU\Wtime\Wremaining:\W([0-9\.]+)"
+p = subprocess.Popen("boinccmd --get_tasks", stdout=subprocess.PIPE, shell=True)
+(output, err) = p.communicate()
+
+matches = re.finditer(regex, output)
+for matchNum, match in enumerate(matches):
+    abort="No"
+    # print match.groups()
+    matchNum = matchNum + 1
+    # Fri Jan 26 00:15:06 2018
+    deadline = match.group(3)
+
+    # Tags
+    taskName = match.group(1)
+    projectName = match.group(2)
+    reportReady = match.group(4)
+    taskState = match.group(6)
+    schedulerState = match.group(7)
+    activeState = match.group(8)
+
+    # Values
+    cpuTimeLeft = match.group(11)
+    expireTime = datetime.strptime(deadline, "%a %b %d %H:%M:%S %Y")
+    timeUntilExpired = expireTime - datetime.now()
+    taskFractionDone = match.group(10)
+    currentCpuTime = match.group(9)
+
+    # Logic to abort task if we can't complete before deadline
+    if float(currentCpuTime) > deadlineThreshold and activeState == "EXECUTING":
+        # Deadline threshold reach, determine if we finish in time
+        if float(cpuTimeLeft) > timeUntilExpired.total_seconds():
+            # Abort task, can't complete in time
+            #abortCmd = "cd /var/lib/boinc-client; boinccmd --task %s %s abort" % ( projectName, taskName )
+            #p2 = subprocess.Popen(abortCmd, stdout=subprocess.PIPE, shell=True)
+            #(output, err) = p2.communicate()
+            #abort="Yes"
+	    activeState = "ABORTED"
+
+    print "boinc,task_name=%s,project_name=%s,report_ready=%s,task_state=%s,scheduler_state=%s,active_state=%s cpu_time_left=%s,task_fraction_complete=%s,cpu_time_current=%s,time_until_expired=%s,abort=\"%s\"" % ( taskName, projectName, reportReady, taskState, schedulerState, activeState, cpuTimeLeft, taskFractionDone, currentCpuTime, timeUntilExpired.total_seconds(), abort )

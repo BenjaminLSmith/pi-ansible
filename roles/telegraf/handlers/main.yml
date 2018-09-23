@@ -1,9 +1,5 @@
 ---
 
 - name: restart telegraf
-  service:
-    name: telegraf
-    state: restarted
-    enabled: test
-  become: yes
+  systemd: name=telegraf state=restarted
   when: not skip_restarts|default(false)|bool

@@ -58,3 +58,20 @@
   tags:
     - telegraf
     - packages
+
+- name: Configure Telegraf
+  template:
+    src: telegraf.conf.j2
+    dest: /etc/telegraf/telegraf.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: "restart telegraf"
+
+- name: Configure Temperature monitoring script
+  template:
+    src: pi_temp.sh.j2
+    dest: /etc/telegraf/pi_temp
+    owner: root
+    group: root
+    mode: 0755
