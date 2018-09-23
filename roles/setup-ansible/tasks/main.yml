@@ -1,0 +1,33 @@
+---
+
+- name: create custom facts directory
+  block:
+    - name: make dir
+      file:
+        path: /etc/ansible/facts.d
+        state: directory
+        owner: root
+        group: root
+        recurse: yes
+      register: f_dir
+      become: yes
+    - name: store path
+      set_fact:
+        f_dir: "{{ f_dir.path }}"
+
+- name: install firstboot fact
+  block:
+    - name: test exists
+      stat: path="{{ f_dir }}/tgt_first_boot.fact"
+      register: fb_stat
+    - name: set firstboot
+      copy:
+        dest: "{{ f_dir }}/tgt_first_boot.fact"
+        content: "true\n"
+      become: yes
+      register: fb_fact
+      when: not fb_stat.stat.exists
+
+- name: refresh facts
+  setup:
+  when: fb_fact|changed
