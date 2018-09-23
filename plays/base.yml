@@ -1,0 +1,9 @@
+---
+- name: configure monitoring
+  strategy: debug
+  hosts:
+    - all
+  roles:
+    - setup-ansible
+    - auth
+    - telegraf
