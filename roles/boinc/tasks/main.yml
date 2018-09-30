@@ -1,0 +1,57 @@
+- name: Ensure the system can use the HTTPS transport for APT.
+  stat:
+    path: /usr/lib/apt/methods/https
+  register: apt_https_transport
+  tags:
+    - boinc
+    - packages
+
+- name: Install APT HTTPS transport.
+  apt:
+    name: "apt-transport-https"
+    state: present
+  when: not apt_https_transport.stat.exists
+  become: yes
+  tags:
+    - boinc
+    - packages
+
+- name: "Install boinc package | Debian"
+  apt:
+    name: boinc
+    state: installed
+  notify: "restart boinc-client"
+  become: yes
+  tags:
+    - boinc
+    - packages
+
+
+- name: Check Account MGR login file exists
+  stat:
+    path: /var/lib/boinc-client/acct_mgr_login.xml
+  register: stat_result
+
+- name: Account MGR login
+  command: boinccmd --join_acct_mgr {{ acct_mgr_url }} {{ acct_mgr_username }} {{ acct_mgr_password }}
+  args:
+    chdir: /var/lib/boinc-client
+  when: stat_result.stat.exists == False
+
+- name: Global Preferences Override
+  template:
+    src: global_prefs_override.xml.j2
+    dest: /etc/boinc-client/global_prefs_override.xml
+    owner: root
+    group: boinc
+    mode: 0664
+  notify: "restart boinc-client"
+
+- name: Configure Core Client Config (tongue-twister)
+  template:
+    src: cc_config.xml.j2
+    dest: /etc/boinc-client/cc_config.xml
+    owner: boinc
+    group: boinc
+    mode: 0664
+  notify: "restart boinc-client"

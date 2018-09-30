@@ -1,0 +1,5 @@
+---
+
+- name: restart boinc-client
+  systemd: name=boinc-client state=restarted
+  when: not skip_restarts|default(false)|bool
